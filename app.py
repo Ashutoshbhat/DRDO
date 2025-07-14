@@ -6,7 +6,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 
 # ── Configuration ──────────────────────────────────────────────────────────────
 # If your model is on Hugging Face Hub (public or private), point here:
-MODEL_ID = os.environ.get("MODEL_ID", "Ashutosh1010/phi2-mentalhealth")
+MODEL_ID = os.environ.get("MODEL_ID", "Ashutosh1010/phi2")
 
 # (Optional) if using a private repo, set HF_TOKEN in Render’s env vars
 HF_TOKEN = os.environ.get("HF_TOKEN")
