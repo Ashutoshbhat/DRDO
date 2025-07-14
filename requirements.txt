@@ -1,0 +1,5 @@
+# requirements.txt
+gradio>=3.34.0
+torch>=2.0.0
+transformers>=4.30.0
+huggingface_hub>=0.15.0
