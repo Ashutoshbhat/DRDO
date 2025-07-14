@@ -1,25 +1,21 @@
 # app.py
+# app.py
 import os
 import gradio as gr
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 # ── Configuration ──────────────────────────────────────────────────────────────
-# If your model is on Hugging Face Hub (public or private), point here:
+# Public HF repo ID (fallback to your repo if MODEL_ID isn’t set)
 MODEL_ID = os.environ.get("MODEL_ID", "Ashutosh1010/phi2")
 
-# (Optional) if using a private repo, set HF_TOKEN in Render’s env vars
-HF_TOKEN = os.environ.get("HF_TOKEN")
-if HF_TOKEN:
-    os.environ["HUGGINGFACE_HUB_TOKEN"] = HF_TOKEN
-
-# Port Render assigns
+# Port (Render or Spaces will inject)
 PORT = int(os.environ.get("PORT", 7860))
 # ────────────────────────────────────────────────────────────────────────────────
 
 # ✅ Load tokenizer & model
 tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-model = AutoModelForCausalLM.from_pretrained(
+model     = AutoModelForCausalLM.from_pretrained(
     MODEL_ID,
     device_map="auto",
     torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
@@ -28,7 +24,6 @@ model.eval()
 
 # ✅ Chat function
 def chat(message, history):
-    # build prompt
     prompt = ""
     for user_msg, bot_msg in history:
         prompt += f"<|user|>\n{user_msg}\n<|assistant|>\n{bot_msg}\n"
