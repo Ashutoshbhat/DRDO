@@ -1,6 +1,6 @@
-# requirements.txt
-gradio>=3.34.0
+streamlit>=1.36.0
 torch>=2.0.0
-transformers>=4.30.0
-huggingface_hub>=0.15.0
-protobuf>=3.20.0
+transformers>=4.40.0
+accelerate>=0.27.0
+sentencepiece
+
