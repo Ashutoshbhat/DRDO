@@ -1,59 +1,60 @@
-# app.py
-# app.py
-import os
-import gradio as gr
+import streamlit as st
+from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
 
-# ── Configuration ──────────────────────────────────────────────────────────────
-# Public HF repo ID (fallback to your repo if MODEL_ID isn’t set)
-MODEL_ID = os.environ.get("MODEL_ID", "Ashutosh1010/phi2")
+st.set_page_config(page_title="My Fine-tuned Chatbot", page_icon="🤖")
 
-# Port (Render or Spaces will inject)
-PORT = int(os.environ.get("PORT", 7860))
-# ────────────────────────────────────────────────────────────────────────────────
-
-# ✅ Load tokenizer & model
-tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-model     = AutoModelForCausalLM.from_pretrained(
-    MODEL_ID,
-    device_map="auto",
-    torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
-)
-model.eval()
-
-# ✅ Chat function
-def chat(message, history):
-    prompt = ""
-    for user_msg, bot_msg in history:
-        prompt += f"<|user|>\n{user_msg}\n<|assistant|>\n{bot_msg}\n"
-    prompt += f"<|user|>\n{message}\n<|assistant|>\n"
-
-    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-    with torch.no_grad():
-        outputs = model.generate(
-            **inputs,
-            max_new_tokens=200,
-            do_sample=True,
-            temperature=0.7,
-            top_p=0.9,
-            pad_token_id=tokenizer.eos_token_id,
-        )
-
-    text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    return text.split("<|assistant|>")[-1].strip()
-
-# ✅ Launch
-if __name__ == "__main__":
-    demo = gr.ChatInterface(
-        fn=chat,
-        title="🧠 YouMatter - Mental Health Chatbot",
-        description="Talk to your fine-tuned Phi-2 chatbot 💬",
-        theme="soft",
+# -------------------------------
+# ✅ Load Model & Tokenizer (cached to avoid reloading every time)
+# -------------------------------
+@st.cache_resource
+def load_model():
+    model_name = "Ashutosh1010/youmatterchatbot"  # Replace with your HF repo
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+        device_map="auto" if torch.cuda.is_available() else None
     )
-    demo.launch(
-        server_name="0.0.0.0",
-        server_port=PORT,
-        share=False,
-        inbrowser=False,
+    return tokenizer, model
+
+st.title("🤖 My Fine-tuned Chatbot")
+
+with st.spinner("Loading model... Please wait, this may take a while."):
+    tokenizer, model = load_model()
+
+# -------------------------------
+# ✅ Chat Function
+# -------------------------------
+def generate_response(user_input):
+    inputs = tokenizer(user_input, return_tensors="pt").to(model.device)
+    outputs = model.generate(
+        **inputs,
+        max_length=200,
+        pad_token_id=tokenizer.eos_token_id,
+        do_sample=True,
+        temperature=0.7,
+        top_p=0.9
     )
+    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return response
+
+# -------------------------------
+# ✅ Chat UI
+# -------------------------------
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
+user_input = st.text_input("You:", "")
+
+if st.button("Send") and user_input:
+    bot_reply = generate_response(user_input)
+    st.session_state.chat_history.append(("You", user_input))
+    st.session_state.chat_history.append(("Bot", bot_reply))
+
+# Display chat history
+for speaker, text in st.session_state.chat_history:
+    if speaker == "You":
+        st.markdown(f"**🧑 You:** {text}")
+    else:
+        st.markdown(f"**🤖 Bot:** {text}")
